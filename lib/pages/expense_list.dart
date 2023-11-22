@@ -3,26 +3,31 @@ import 'package:expenseapp/widgets/expense_item.dart';
 import 'package:flutter/material.dart';
 
 class ExpenseList extends StatefulWidget {
-  const ExpenseList({Key? key}) : super(key: key);
+  const ExpenseList(this.expenses, this.onRemove,{Key? key}) : super(key: key);
+  final List<Expense> expenses;
+  final void Function(Expense expense) onRemove;
+  
 
   @override
   _ExpenseListState createState() => _ExpenseListState();
 }
 
 class _ExpenseListState extends State<ExpenseList> {
-  //dummy data
-  final List<Expense> expenses = [
-    Expense(
-        name: "Yiyecek",
-        price: 200,
-        date: DateTime.now(),
-        category: Category.food),
-    Expense(
-        name: "Flutter Udemy Course",
-        price: 200,
-        date: DateTime.now(),
-        category: Category.education),
-  ];
+ List<Expense> removedExpenses = [];
+
+ void undoRemove(int index){
+  final snackBar = SnackBar(
+    content:const Text("Expense removed"),
+    action: SnackBarAction(
+      label: "Undo", 
+      onPressed: () {
+        setState(() {
+          
+        });
+      }),);
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+ }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -37,9 +42,18 @@ class _ExpenseListState extends State<ExpenseList> {
           ),
           Expanded(
             child: ListView.builder(
-              itemCount: expenses.length,
+              itemCount: widget.expenses.length,
               itemBuilder: (context, index) {
-                return ExpenseItem(expenses[index]);
+                return Dismissible(
+                key: ValueKey(widget.expenses[index]),
+                child: ExpenseItem(widget.expenses[index]),
+                onDismissed: (direction) {
+                  if(direction == DismissDirection.startToEnd){
+                    //soldan sağa ise
+                  }
+                  widget.onRemove(widget.expenses[index]);
+                },
+                );
               },
             ),
           ),

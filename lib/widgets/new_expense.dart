@@ -1,7 +1,11 @@
+import 'package:expenseapp/models/expense.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class NewExpense extends StatefulWidget {
-  const NewExpense({Key? key}) : super(key: key);
+  const NewExpense({Key? key, required this.onAdd}) : super(key: key);
+
+  final void Function(Expense expense) onAdd;
 
   @override
   _NewExpenseState createState() => _NewExpenseState();
@@ -11,39 +15,153 @@ class _NewExpenseState extends State<NewExpense> {
   //controller
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
-  DateTime date = DateTime(2023,11,14);
+  DateTime? _selectedDate;
+  Category _selectedCategory = Category.work;
+
+  void _openDatePicker() async {
+    //DatePicker açmak
+    //DatePicker'dan gelen değeri Text olarak yazdırmak
+    //built-in function
+
+    //sync => bir işlem bitmeden diğerinin başlamadığı yapılar
+    //async =>alt satıra geçmek için işlemin bitmesini beklemezler // await
+
+    DateTime now = DateTime.now();
+    DateTime oneYearAgo = DateTime(now.year - 1, now.month, now.day);
+
+    // 1 yıl öncesi ve bugün arasında kısıtlama
+    // then => async bir işlemin geri dönüş sağladığı anda çalışacak bloğunu tanımlar.
+    // showDatePicker(
+    //         context: context,
+    //         initialDate: now,
+    //         firstDate: oneYearAgo,
+    //         lastDate: now)
+    //     .then((value) {
+    //   print(value);
+    // });
+
+    //await => ilgili async işlemini bekle
+    DateTime? selectedDate = await showDatePicker(
+        context: context,
+        initialDate: _selectedDate == null ? now : _selectedDate!,
+        firstDate: oneYearAgo,
+        lastDate: now);
+
+    setState(() {
+      _selectedDate = selectedDate;
+    });
+  }
+
+  void _addNewExpense() {
+    final amount = double.tryParse(_amountController.text);
+    //parse,tryParse => parse değer nullsa hata fırlatır, tryParse değeri null olarak alır
+    if (amount == null ||
+        amount < 0 ||
+        _amountController.text.isEmpty ||
+        _selectedDate == null) {
+      showDialog(
+          context: context,
+          builder: (ctx) {
+            return AlertDialog(
+              title: const Text("Validation Error"),
+              content: const Text("Please fill all blank areas."),
+              actions: [
+                TextButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                    },
+                    child: const Text("Okay"))
+              ],
+            );
+          });
+    } else {
+      Expense expense = Expense(
+          name: _nameController.text,
+          price: amount,
+          date: _selectedDate!,
+          category: _selectedCategory);
+        widget.onAdd(expense);
+        Navigator.pop(context);
+      //valid bir değer
+      //listeye ekleme yapılması gereken nokta..
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return  Padding(
-      padding:const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           TextField(
             controller: _nameController,
             maxLength: 50,
-            decoration:const InputDecoration(label: Text("Expense Name")),
+            decoration: const InputDecoration(label: Text("Expense Name")),
           ),
-          TextField(
-            controller: _amountController,
-            keyboardType: TextInputType.number,
-            decoration:const InputDecoration(label: Text("Amount"),prefixText: "₺" ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _amountController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                      label: Text("Amount"), prefixText: "₺"),
+                ),
+              ),
+              const SizedBox(
+                width: 30,
+              ),
+              Expanded(
+                child: Row(
+                  children: [
+                    IconButton(
+                        onPressed: () => _openDatePicker(),
+                        icon: const Icon(Icons.calendar_month)),
+                    Text(_selectedDate == null
+                        ? "Tarih Seçiniz.."
+                        : DateFormat.yMd().format(_selectedDate!)),
+                  ],
+                ),
+              ),
+            ],
+          ), // seçilen tarihi formatlayarak yazdırmak
+          const SizedBox(
+            height: 40,
           ),
-          IconButton(onPressed: () async {
-            DateTime? newDate = await showDatePicker(context: context, initialDate: date, firstDate: DateTime(2000), lastDate: DateTime(2025));
-            if (newDate == null) return;
-
-            setState(() => date = newDate );
-
-            //DatePicker açmak
-            //DatePicker'dan gelen değeri Text olarak yazdırmak
-          }, icon: const Icon(Icons.calendar_month)),
-          const Text(
-            "Tarih Seçiniz.."), // seçilen tarihi formatlayarak yazdırmak
-          ElevatedButton(onPressed: () {
-            print("Kayıt başarılı: ${_nameController.text}");
-          }, 
-          child:const Text("Kaydet"))
+          Row(
+            children: [
+              DropdownButton(
+                  value: _selectedCategory,
+                  items: Category.values.map((category) {
+                    return DropdownMenuItem(
+                        value: category, child: Text(category.name.toString()));
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      if (value != null) _selectedCategory = value;
+                    });
+                  })
+            ],
+          ),
+          const Spacer(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Vazgeç")),
+              const SizedBox(
+                width: 30,
+              ),
+              ElevatedButton(
+                  onPressed: () {
+                    _addNewExpense();
+                  },
+                  child: const Text("Kaydet")),
+            ],
+          )
         ],
       ),
     );
