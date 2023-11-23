@@ -13,16 +13,17 @@ class ExpenseList extends StatefulWidget {
 }
 
 class _ExpenseListState extends State<ExpenseList> {
- List<Expense> removedExpenses = [];
+ final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+ Expense? _removedExpense;
 
- void undoRemove(int index){
+ void _showUndoSnackbar(Expense removedExpense){
   final snackBar = SnackBar(
     content:const Text("Expense removed"),
     action: SnackBarAction(
       label: "Undo", 
       onPressed: () {
         setState(() {
-          
+          widget.expenses.add(removedExpense);
         });
       }),);
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
@@ -51,8 +52,13 @@ class _ExpenseListState extends State<ExpenseList> {
                   if(direction == DismissDirection.startToEnd){
                     //soldan sağa ise
                   }
-                  widget.onRemove(widget.expenses[index]);
+                  setState(() {
+                    _removedExpense = widget.expenses.removeAt(index);
+                  });
+                  _showUndoSnackbar(_removedExpense!);
+                  widget.onRemove(_removedExpense!);
                 },
+                direction: DismissDirection.startToEnd,
                 );
               },
             ),
