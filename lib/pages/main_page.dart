@@ -14,7 +14,7 @@ class _MainPageState extends State<MainPage> {
   final List<Expense> expenses = [
     Expense(
         name: "Yiyecek",
-        price: 200,
+        price: 400,
         date: DateTime.now(),
         category: Category.food),
     Expense(
